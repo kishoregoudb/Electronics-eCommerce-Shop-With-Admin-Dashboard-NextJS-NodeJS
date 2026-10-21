@@ -1,6 +1,7 @@
 const prisma = require("../utills/db");
 const bcrypt = require("bcryptjs");
 const { asyncHandler, AppError } = require("../utills/errorHandler");
+const { DEFAULT_ROLE, assertValidRole } = require("../utills/roles");
 
 // Helper function to exclude password from user object
 function excludePassword(user) {
@@ -35,13 +36,17 @@ const createUser = asyncHandler(async (request, response) => {
     throw new AppError("Password must be at least 8 characters long", 400);
   }
 
+  // A missing role defaults to "user"; any supplied value must be allowed
+  const validRole =
+    role === undefined || role === null ? DEFAULT_ROLE : assertValidRole(role);
+
   const hashedPassword = await bcrypt.hash(password, 14);
 
   const user = await prisma.user.create({
     data: {
       email,
       password: hashedPassword,
-      role: role || "user",
+      role: validRole,
     },
   });
   // Exclude password from response
@@ -81,8 +86,8 @@ const updateUser = asyncHandler(async (request, response) => {
     }
     updateData.password = await bcrypt.hash(password, 14);
   }
-  if (role) {
-    updateData.role = role;
+  if (role !== undefined && role !== null) {
+    updateData.role = assertValidRole(role);
   }
 
   const updatedUser = await prisma.user.update({
