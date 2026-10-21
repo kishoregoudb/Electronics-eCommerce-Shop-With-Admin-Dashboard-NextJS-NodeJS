@@ -14,6 +14,7 @@ import { FaSquareFacebook } from "react-icons/fa6";
 import { FaSquareXTwitter } from "react-icons/fa6";
 import { FaSquarePinterest } from "react-icons/fa6";
 import { sanitize } from "@/lib/sanitize";
+import { formatSku } from "@/utils/formatSku";
 
 interface ImageItem {
   imageID: string;
@@ -72,13 +73,15 @@ const SingleProductPage = async ({ params }: SingleProductPageProps) => {
         
             <h1 className="text-3xl">{sanitize(product?.title)}</h1>
             <p className="text-xl font-semibold">${product?.price}</p>
-            <StockAvailabillity stock={94} inStock={product?.inStock} />
+            <StockAvailabillity inStock={product?.inStock} />
             <SingleProductDynamicFields product={product} />
             <div className="flex flex-col gap-y-2 max-[500px]:items-center">
              
-              <p className="text-lg">
-                SKU: <span className="ml-1">abccd-18</span>
-              </p>
+              {formatSku(product?.id) && (
+                <p className="text-lg">
+                  SKU: <span className="ml-1">{formatSku(product?.id)}</span>
+                </p>
+              )}
               <div className="text-lg flex gap-x-2">
                 <span>Share:</span>
                 <div className="flex items-center gap-x-1 text-2xl">

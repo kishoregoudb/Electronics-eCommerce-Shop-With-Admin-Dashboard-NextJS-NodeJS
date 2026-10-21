@@ -11,8 +11,6 @@
 "use client";
 
 import React, { useState } from "react";
-import RatingPercentElement from "./RatingPercentElement";
-import SingleReview from "./SingleReview";
 import { formatCategoryName } from "@/utils/categoryFormating";
 import { sanitize, sanitizeHtml } from "@/lib/sanitize";
 
@@ -68,11 +66,6 @@ const ProductTabs = ({ product }: { product: Product }) => {
                       ? sanitize(formatCategoryName(product?.category?.name))
                       : "No category"}
                   </td>
-                </tr>
-                {/* row 3 */}
-                <tr>
-                  <th>Color:</th>
-                  <td>Silver, LightSlateGray, Blue</td>
                 </tr>
               </tbody>
             </table>
