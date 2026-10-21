@@ -23,7 +23,7 @@ interface ImageItem {
 }
 
 interface SingleProductPageProps {
-  params: Promise<{  productSlug: string, id: string }>;
+  params: Promise<{ productSlug: string }>;
 }
 
 const SingleProductPage = async ({ params }: SingleProductPageProps) => {
@@ -34,15 +34,14 @@ const SingleProductPage = async ({ params }: SingleProductPageProps) => {
   );
   const product = await data.json();
 
-  // sending API request for more than 1 product image if it exists
-  const imagesData = await apiClient.get(
-    `/api/images/${paramsAwaited?.id}`
-  );
-  const images = await imagesData.json();
-
   if (!product || product.error) {
     notFound();
   }
+
+  // The route only has a slug. Gallery images are stored against the product id.
+  const imagesData = await apiClient.get(`/api/images/${product.id}`);
+  const imagesJson = await imagesData.json();
+  const images = Array.isArray(imagesJson) ? imagesJson : [];
 
   return (
     <div className="bg-white">
