@@ -29,3 +29,7 @@ Chunked session cookies (`.0`, `.1`) are not joined yet. Needs SME for productio
 | All `/api/wishlist` | signed in; the user id is the token, not the URL |
 
 `/api/order-product` is deprecated. Checkout creates line items inside `POST /api/orders`.
+
+## Server dependencies
+
+`server/package.json` now declares `next-auth` (JWT decode in `server/middleware/auth.js`), `dotenv` (loaded by `server/app.js`) and `express-rate-limit` (used by `server/middleware/rateLimiter.js`). They were previously resolved only through the root `node_modules`. Declaring them here keeps the server working if it is installed on its own. Whether the repo should become one workspace is still an open SME question (`docs/sme-questions.md`).
