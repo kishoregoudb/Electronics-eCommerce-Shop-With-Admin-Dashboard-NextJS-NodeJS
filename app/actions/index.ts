@@ -1,10 +1,5 @@
 'use server'
 
-// Wishlist changes go through the browser (apiClient) so the session cookie is sent.
-// A Server Action fetch does not carry that cookie. Needs SME if a Server Action is preferred.
-export async function deleteWishItem() {
-  throw new Error("Call DELETE /api/wishlist/:productId from the browser.");
-}
 
 
 // import { redirect } from 'next/navigation'
