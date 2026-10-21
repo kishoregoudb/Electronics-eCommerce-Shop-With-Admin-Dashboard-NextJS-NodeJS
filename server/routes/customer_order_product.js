@@ -10,14 +10,18 @@ const {
        getAllProductOrders
   } = require('../controllers/customer_order_product');
 
+// Deprecated. Checkout writes line items in POST /api/orders.
+// Reads and changes require an admin. Creating a line stays open for older clients.
+const { requireAdmin } = require("../middleware/auth");
+
   router.route('/')
-  .get(getAllProductOrders)
+  .get(requireAdmin, getAllProductOrders)
   .post(createOrderProduct);
 
   router.route('/:id')
-  .get(getProductOrder)
-  .put(updateProductOrder) 
-  .delete(deleteProductOrder); 
+  .get(requireAdmin, getProductOrder)
+  .put(requireAdmin, updateProductOrder)
+  .delete(requireAdmin, deleteProductOrder); 
 
 
   module.exports = router;

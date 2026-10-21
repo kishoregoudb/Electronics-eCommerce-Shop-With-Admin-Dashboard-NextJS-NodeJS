@@ -10,11 +10,15 @@ const {
   getUnreadCount
 } = require('../controllers/notificationController');
 
+const { requireAuth, requireSelfOrAdmin } = require("../middleware/auth");
+
+router.use(requireAuth);
+
 // GET /api/notifications/:userId/unread-count - Get unread notification count
-router.get('/:userId/unread-count', getUnreadCount);
+router.get('/:userId/unread-count', requireSelfOrAdmin("userId"), getUnreadCount);
 
 // GET /api/notifications/:userId - Get user notifications with filtering and pagination
-router.get('/:userId', getUserNotifications);
+router.get('/:userId', requireSelfOrAdmin("userId"), getUserNotifications);
 
 // POST /api/notifications - Create new notification
 router.post('/', createNotification);

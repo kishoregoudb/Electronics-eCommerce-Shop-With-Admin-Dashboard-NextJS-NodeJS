@@ -10,12 +10,14 @@ const {
   getAllCategories,
 } = require("../controllers/category");
 
-router.route("/").get(getAllCategories).post(createCategory);
+const { requireAdmin } = require("../middleware/auth");
+
+router.route("/").get(getAllCategories).post(requireAdmin, createCategory);
 
 router
   .route("/:id")
   .get(getCategory)
-  .put(updateCategory)
-  .delete(deleteCategory);
+  .put(requireAdmin, updateCategory)
+  .delete(requireAdmin, deleteCategory);
 
 module.exports = router;

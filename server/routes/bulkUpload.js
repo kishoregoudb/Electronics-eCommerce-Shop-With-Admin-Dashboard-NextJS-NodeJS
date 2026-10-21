@@ -9,13 +9,15 @@ const {
   deleteBatch,
 } = require("../controllers/bulkUpload");
 
+const { requireAdmin } = require("../middleware/auth");
+
 router.route("/")
-  .post(uploadCsvAndCreateBatch)
-  .get(listBatches);
+  .post(requireAdmin, uploadCsvAndCreateBatch)
+  .get(requireAdmin, listBatches);
 
 router.route("/:batchId")
-  .get(getBatchDetail)
-  .put(updateBatchItems)
-  .delete(deleteBatch);
+  .get(requireAdmin, getBatchDetail)
+  .put(requireAdmin, updateBatchItems)
+  .delete(requireAdmin, deleteBatch);
 
 module.exports = router;

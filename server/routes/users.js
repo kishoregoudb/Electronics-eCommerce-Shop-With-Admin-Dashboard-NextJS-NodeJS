@@ -11,17 +11,19 @@ const {
     getUserByEmail
   } = require('../controllers/users');
 
-  router.route('/')
-  .get(getAllUsers)
-  .post(createUser);
+const { requireAdmin, requireSelfOrAdmin, requireSelfEmailOrAdmin } = require("../middleware/auth");
 
-  router.route('/:id')
-  .get(getUser)
-  .put(updateUser) 
-  .delete(deleteUser);
+  router.route('/')
+  .get(requireAdmin, getAllUsers)
+  .post(requireAdmin, createUser);
 
   router.route('/email/:email')
-  .get(getUserByEmail);
+  .get(requireSelfEmailOrAdmin, getUserByEmail);
+
+  router.route('/:id')
+  .get(requireSelfOrAdmin("id"), getUser)
+  .put(requireSelfOrAdmin("id"), updateUser)
+  .delete(requireSelfOrAdmin("id"), deleteUser);
 
 
   module.exports = router;
