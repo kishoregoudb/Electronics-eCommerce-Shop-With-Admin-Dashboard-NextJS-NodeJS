@@ -1,5 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const prisma = require("../utills/db");
+// Deprecated: checkout now creates line items inside POST /api/orders.
+// This route remains so older clients can still attach a line to an existing order.
 const { asyncHandler, AppError } = require("../utills/errorHandler");
 
 const createOrderProduct = asyncHandler(async (request, response) => {

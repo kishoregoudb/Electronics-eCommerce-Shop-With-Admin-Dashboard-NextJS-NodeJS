@@ -1,6 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
-const { validateOrderData, ValidationError } = require('../utills/validation');
+const { validateOrderData, validateOrderItems, ValidationError } = require('../utills/validation');
 const { createOrderUpdateNotification } = require('../utills/notificationHelpers');
 const { redactOrder, orderLogSummary, safeError } = require('../utills/logSafe');
 
@@ -18,8 +18,8 @@ async function createCustomerOrder(request, response) {
       });
     }
 
-    // Server-side validation
-    const validation = validateOrderData(request.body);
+    // Customer fields only. A client-supplied total is ignored.
+    const validation = validateOrderData(request.body, { ignoreTotal: true });
     console.log("Validation result: isValid =", validation.isValid);
     
     if (!validation.isValid) {
@@ -31,23 +31,58 @@ async function createCustomerOrder(request, response) {
     }
 
     const validatedData = validation.validatedData;
-    console.log("✅ Validation passed, validated data:", redactOrder(validatedData));
-
-    // Additional business logic validation
-    if (validatedData.total < 0.01) {
-      console.log("❌ Invalid total amount");
+    const itemsResult = validateOrderItems(request.body.items);
+    if (!itemsResult.isValid) {
+      console.log("❌ Item validation failed");
       return response.status(400).json({
-        error: "Invalid order total",
-        details: [{ field: 'total', message: 'Order total must be at least $0.01' }]
+        error: "Validation failed",
+        details: itemsResult.errors
       });
     }
 
-    // Check for duplicate orders (same email and total within last 1 minute) - less strict
+    const productIds = itemsResult.items.map((item) => item.productId);
+    const dbProducts = await prisma.product.findMany({
+      where: { id: { in: productIds } }
+    });
+    if (dbProducts.length !== productIds.length) {
+      console.log("❌ Unknown product in order");
+      return response.status(404).json({
+        error: "Unknown product",
+        details: "One or more products do not exist"
+      });
+    }
+
+    const productById = new Map(dbProducts.map((product) => [product.id, product]));
+    for (const item of itemsResult.items) {
+      if (productById.get(item.productId).inStock !== 1) {
+        console.log("❌ Out of stock product", item.productId);
+        return response.status(409).json({
+          error: "Product out of stock",
+          details: "One or more products are not available"
+        });
+      }
+    }
+
+    let total = 0;
+    for (const item of itemsResult.items) {
+      total += productById.get(item.productId).price * item.quantity;
+    }
+    if (!Number.isInteger(total) || total < 1) {
+      console.log("❌ Invalid computed total");
+      return response.status(400).json({
+        error: "Invalid order total",
+        details: [{ field: "total", message: "Order total must be at least 1" }]
+      });
+    }
+
+    console.log("✅ Validation passed. Computed total:", total, "items:", itemsResult.items.length);
+
+    // Check for duplicate orders (same email and computed total within last 1 minute)
     const oneMinuteAgo = new Date(Date.now() - 1 * 60 * 1000);
     const duplicateOrder = await prisma.customer_order.findFirst({
       where: {
         email: validatedData.email,
-        total: validatedData.total,
+        total: total,
         dateTime: {
           gte: oneMinuteAgo
         }
@@ -78,8 +113,14 @@ async function createCustomerOrder(request, response) {
         city: validatedData.city,
         country: validatedData.country,
         orderNotice: validatedData.orderNotice,
-        total: validatedData.total,
-        dateTime: new Date()
+        total: total,
+        dateTime: new Date(),
+        products: {
+          create: itemsResult.items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity
+          }))
+        }
       },
     });
 
@@ -90,15 +131,16 @@ async function createCustomerOrder(request, response) {
       let user = null;
       
       // First, try to use userId if provided (from logged-in user)
-      if (request.body.userId) {
-        console.log(`🔍 Using provided userId: ${request.body.userId}`);
+      const identityId = request.user && request.user.id;
+      if (identityId) {
+        console.log("🔍 Using signed-in user id");
         user = await prisma.user.findUnique({
-          where: { id: request.body.userId }
+          where: { id: identityId }
         });
         if (user) {
           console.log(`✅ Found user by ID: ${user.id}`);
         } else {
-          console.log(`❌ User not found with ID: ${request.body.userId}`);
+          console.log("❌ Signed-in user was not found");
         }
       }
       
@@ -118,7 +160,7 @@ async function createCustomerOrder(request, response) {
           user.id,
           'confirmed',
           corder.id,
-          validatedData.total
+          total
         );
         console.log(`📧 Order confirmation notification sent to user: ${user.id}`);
       } else {
@@ -130,12 +172,13 @@ async function createCustomerOrder(request, response) {
     }
 
     // Log successful order creation (for monitoring)
-    console.log(`Order created successfully: ID ${corder.id}, Total: $${validatedData.total}, reqId ${request.reqId}`);
+    console.log(`Order created successfully: ID ${corder.id}, Total: $${total}, items: ${itemsResult.items.length}, reqId ${request.reqId}`);
 
     const responseData = {
       id: corder.id,
       message: "Order created successfully",
-      orderNumber: corder.id
+      orderNumber: corder.id,
+      total: total
     };
     
     console.log("Sending response:", responseData);

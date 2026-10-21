@@ -6,6 +6,8 @@ jest.mock("@prisma/client", () => {
       findUnique: jest.fn(),
       update: jest.fn(),
     },
+    product: { findMany: jest.fn() },
+    customer_order_product: { create: jest.fn() },
     user: { findUnique: jest.fn() },
   };
   return { PrismaClient: jest.fn(() => prisma), __prisma: prisma };
@@ -30,8 +32,9 @@ const body = {
   country: "United States",
   orderNotice: "gate code 4471",
   status: "pending",
-  total: 150,
+  total: 1,
   userId: "u1",
+  items: [{ productId: "p1", quantity: 1 }],
 };
 const SENSITIVE = [
   "Zebulon", "Quimby", "5559871234", "zebulon.quimby@example.com",
@@ -61,7 +64,8 @@ describe("order controller logging", () => {
 
   it("createCustomerOrder logs no sensitive values and keeps the response", async () => {
     prisma.customer_order.findFirst.mockResolvedValue(null);
-    prisma.customer_order.create.mockResolvedValue({ id: "o1", ...body, dateTime: new Date() });
+    prisma.product.findMany.mockResolvedValue([{ id: "p1", price: 150, inStock: 1 }]);
+    prisma.customer_order.create.mockResolvedValue({ id: "o1", status: "pending", total: 150 });
     prisma.user.findUnique.mockResolvedValue({ id: "u1", email: body.email });
     const res = mockRes();
 
@@ -69,7 +73,7 @@ describe("order controller logging", () => {
 
     expect(res.status).toHaveBeenCalledWith(201);
     expect(res.json).toHaveBeenCalledWith({
-      id: "o1", message: "Order created successfully", orderNumber: "o1",
+      id: "o1", message: "Order created successfully", orderNumber: "o1", total: 150,
     });
     const out = logged(spies);
     for (const v of SENSITIVE) expect(out).not.toContain(v);

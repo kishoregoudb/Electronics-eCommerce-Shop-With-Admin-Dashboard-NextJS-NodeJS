@@ -317,7 +317,60 @@ const orderValidation = {
 };
 
 // Comprehensive order validation - FIXED VERSION
-const validateOrderData = (orderData) => {
+const MAX_LINE_QUANTITY = 10;
+
+const validateOrderItems = (items) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return {
+      isValid: false,
+      errors: [{ field: "items", message: "At least one item is required" }],
+      items: [],
+    };
+  }
+
+  const errors = [];
+  const merged = new Map();
+
+  items.forEach((item, index) => {
+    const productId = item && typeof item.productId === "string" ? item.productId.trim() : "";
+    if (!productId) {
+      errors.push({ field: "items", message: `Item ${index + 1} needs a productId` });
+      return;
+    }
+
+    const quantity = item.quantity;
+    if (typeof quantity !== "number" || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_LINE_QUANTITY) {
+      errors.push({
+        field: "quantity",
+        message: `Quantity must be a whole number from 1 to ${MAX_LINE_QUANTITY}`,
+      });
+      return;
+    }
+
+    merged.set(productId, (merged.get(productId) || 0) + quantity);
+  });
+
+  for (const quantity of merged.values()) {
+    if (quantity > MAX_LINE_QUANTITY) {
+      errors.push({
+        field: "quantity",
+        message: `Quantity must be a whole number from 1 to ${MAX_LINE_QUANTITY}`,
+      });
+    }
+  }
+
+  if (errors.length > 0) {
+    return { isValid: false, errors, items: [] };
+  }
+
+  return {
+    isValid: true,
+    errors: [],
+    items: Array.from(merged, ([productId, quantity]) => ({ productId, quantity })),
+  };
+};
+
+const validateOrderData = (orderData, options = {}) => {
   const errors = [];
   const validatedData = {};
 
@@ -353,7 +406,11 @@ const validateOrderData = (orderData) => {
   validatedData.city = safeValidate(orderValidation.validateAddress, orderData.city, 'city');
   validatedData.country = safeValidate(orderValidation.validateAddress, orderData.country, 'country');
   validatedData.postalCode = safeValidate(orderValidation.validatePostalCode, orderData.postalCode, 'postalCode');
-  validatedData.total = safeValidate(orderValidation.validateTotal, orderData.total, 'total');
+  if (options.ignoreTotal) {
+    validatedData.total = null;
+  } else {
+    validatedData.total = safeValidate(orderValidation.validateTotal, orderData.total, 'total');
+  }
   validatedData.status = safeValidate(orderValidation.validateStatus, orderData.status || 'pending', 'status');
   
   // Optional fields
@@ -439,5 +496,7 @@ module.exports = {
   paymentValidation,
   orderValidation,
   validateOrderData,
-  validatePaymentData
+  validateOrderItems,
+  validatePaymentData,
+  MAX_LINE_QUANTITY
 };

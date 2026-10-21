@@ -160,7 +160,11 @@ const CheckoutPage = () => {
         city: checkoutForm.city.trim(),
         country: checkoutForm.country.trim(),
         orderNotice: checkoutForm.orderNotice.trim(),
-        userId: userId // Add user ID for notifications
+        userId: userId,
+        items: products.map((product) => ({
+          productId: product.id,
+          quantity: product.amount,
+        })),
       };
 
       // Send order data to server for validation and processing
@@ -209,22 +213,6 @@ const CheckoutPage = () => {
         console.error("❌ Order ID is missing or falsy!");
         throw new Error("Order ID not received from server");
       }
-
-      console.log("✅ Order ID validation passed, proceeding with product addition...");
-
-      // Add products to order
-      for (let i = 0; i < products.length; i++) {
-        console.log(`🛍️ Adding product ${i + 1}/${products.length}:`, {
-          orderId,
-          productId: products[i].id,
-          quantity: products[i].amount
-        });
-        
-        await addOrderProduct(orderId, products[i].id, products[i].amount);
-        console.log(`✅ Product ${i + 1} added successfully`);
-      }
-
-      console.log(" All products added successfully!");
 
       // Clear form and cart
       setCheckoutForm({
@@ -282,38 +270,6 @@ const CheckoutPage = () => {
       }
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const addOrderProduct = async (
-    orderId: string,
-    productId: string,
-    productQuantity: number
-  ) => {
-    try {
-      console.log("️ Adding product to order:", {
-        customerOrderId: orderId,
-        productId,
-        quantity: productQuantity
-      });
-      
-      const response = await apiClient.post("/api/order-product", {
-        customerOrderId: orderId,
-        productId: productId,
-        quantity: productQuantity,
-      });
-
-      if (!response.ok) {
-        console.error("❌ Product order failed:", response.status);
-        throw new Error(`Product order failed: ${response.status}`);
-      }
-
-      await response.json();
-      console.log("✅ Product order successful");
-      
-    } catch (error) {
-      console.error("💥 Error creating product order:", error);
-      throw error;
     }
   };
 
