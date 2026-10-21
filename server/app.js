@@ -171,8 +171,15 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log('Rate limiting and request logging enabled for all endpoints');
-  console.log('Logs are being written to server/logs/ directory');
-});
+
+// Listen only when launched directly (`node app.js`). Tests import this file
+// and must not open a port.
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log('Rate limiting and request logging enabled for all endpoints');
+    console.log('Logs are being written to server/logs/ directory');
+  });
+}
+
+module.exports = app;
