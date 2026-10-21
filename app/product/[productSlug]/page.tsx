@@ -4,7 +4,7 @@ import {
 
   ProductTabs,
   SingleProductDynamicFields,
-  
+  AddToWishlistBtn,
 } from "@/components";
 import apiClient from "@/lib/api";
 import Image from "next/image";
@@ -72,6 +72,16 @@ const SingleProductPage = async ({ params }: SingleProductPageProps) => {
         
             <h1 className="text-3xl">{sanitize(product?.title)}</h1>
             <p className="text-xl font-semibold">${product?.price}</p>
+            <AddToWishlistBtn
+              product={{
+                id: product.id,
+                title: product.title,
+                price: product.price,
+                image: product.mainImage,
+                slug: product.slug,
+                stockAvailabillity: product.inStock,
+              }}
+            />
             <StockAvailabillity stock={94} inStock={product?.inStock} />
             <SingleProductDynamicFields product={product} />
             <div className="flex flex-col gap-y-2 max-[500px]:items-center">

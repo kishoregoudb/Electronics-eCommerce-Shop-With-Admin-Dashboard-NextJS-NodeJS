@@ -127,6 +127,23 @@ const orderLimiter = rateLimit({
   }
 });
 
+const wishlistLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 20,
+  message: {
+    error: "Too many wishlist operations, please try again later.",
+    retryAfter: "5 minutes"
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: (req, res) => {
+    res.status(429).json({
+      error: "Too many wishlist operations, please try again later.",
+      retryAfter: "5 minutes"
+    });
+  }
+});
+
 module.exports = {
   generalLimiter,
   authLimiter,
@@ -134,5 +151,6 @@ module.exports = {
   userManagementLimiter,
   uploadLimiter,
   searchLimiter,
-  orderLimiter
+  orderLimiter,
+  wishlistLimiter
 };

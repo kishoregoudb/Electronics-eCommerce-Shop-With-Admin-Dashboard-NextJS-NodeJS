@@ -14,7 +14,7 @@ const userRouter = require("./routes/users");
 const orderRouter = require("./routes/customer_orders");
 const slugRouter = require("./routes/slugs");
 const orderProductRouter = require('./routes/customer_order_product');
-// const wishlistRouter = require('./routes/wishlist');
+const wishlistRouter = require('./routes/wishlist');
 const notificationsRouter = require('./routes/notifications');
 const merchantRouter = require('./routes/merchant'); // Add this line
 const bulkUploadRouter = require('./routes/bulkUpload');
@@ -36,8 +36,10 @@ const {
   userManagementLimiter,
   uploadLimiter,
   searchLimiter,
-  orderLimiter
+  orderLimiter,
+  wishlistLimiter
 } = require('./middleware/rateLimiter');
+const { authenticate } = require('./middleware/auth');
 
 
 const {
@@ -98,6 +100,7 @@ app.use(generalLimiter);
 
 app.use(express.json());
 app.use(cors(corsOptions));
+app.use(authenticate);
 app.use(fileUpload());
 
 // Apply specific rate limiters to different route groups
@@ -107,7 +110,7 @@ app.use("/api/orders", orderLimiter);
 app.use("/api/order-product", orderLimiter);
 app.use("/api/images", uploadLimiter);
 app.use("/api/main-image", uploadLimiter);
-// app.use("/api/wishlist", wishlistLimiter);
+app.use("/api/wishlist", wishlistLimiter);
 // app.use("/api/products", productLimiter);
 // app.use("/api/merchants", productLimiter);
 app.use("/api/bulk-upload", uploadLimiter);
@@ -127,7 +130,7 @@ app.use("/api/search", searchRouter);
 app.use("/api/orders", orderRouter);
 app.use('/api/order-product', orderProductRouter);
 app.use("/api/slugs", slugRouter);
-// app.use("/api/wishlist", wishlistRouter);
+app.use("/api/wishlist", wishlistRouter);
 app.use("/api/notifications", notificationsRouter);
 app.use("/api/merchants", merchantRouter); 
 app.use("/api/bulk-upload", bulkUploadRouter);

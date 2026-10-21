@@ -35,45 +35,27 @@ const Header = () => {
     toast.success("Logout successful!");
   };
 
-  // getting all wishlist items by user id
-  const getWishlistByUserId = async (id: string) => {
-    const response = await apiClient.get(`/api/wishlist/${id}`, {
+  const getWishlist = async () => {
+    if (!session?.user) return;
+    const response = await apiClient.get("/api/wishlist", {
       cache: "no-store",
     });
-    const wishlist = await response.json();
-    const productArray: {
-      id: string;
-      title: string;
-      price: number;
-      image: string;
-      slug:string
-      stockAvailabillity: number;
-    }[] = [];
-
-    return; // temporary disable wishlist fetching while the issue is being resolved
-    
-    wishlist.map((item: any) => productArray.push({id: item?.product?.id, title: item?.product?.title, price: item?.product?.price, image: item?.product?.mainImage, slug: item?.product?.slug, stockAvailabillity: item?.product?.inStock}));
-    
-    setWishlist(productArray);
-  };
-
-  // getting user by email so I can get his user id
-  const getUserByEmail = async () => {
-    if (session?.user?.email) {
-      
-      apiClient.get(`/api/users/email/${session?.user?.email}`, {
-        cache: "no-store",
-      })
-        .then((response) => response.json())
-        .then((data) => {
-          getWishlistByUserId(data?.id);
-        });
-    }
+    if (!response.ok) return;
+    const items = await response.json();
+    if (!Array.isArray(items)) return;
+    setWishlist(items.map((item: any) => ({
+      id: item?.product?.id,
+      title: item?.product?.title,
+      price: item?.product?.price,
+      image: item?.product?.mainImage,
+      slug: item?.product?.slug,
+      stockAvailabillity: item?.product?.inStock,
+    })));
   };
 
   useEffect(() => {
-    getUserByEmail();
-  }, [session?.user?.email, wishlist.length]);
+    getWishlist();
+  }, [session?.user, wishlist.length]);
 
   return (
     <header className="bg-white">
