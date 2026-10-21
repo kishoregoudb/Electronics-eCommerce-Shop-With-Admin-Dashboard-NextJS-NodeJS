@@ -131,14 +131,14 @@ const CheckoutPage = () => {
       let userId = null;
       if (session?.user?.email) {
         try {
-          console.log("🔍 Getting user ID for logged-in user:", session.user.email);
+          console.log("🔍 Getting user ID for logged-in user");
           const userResponse = await apiClient.get(`/api/users/email/${session.user.email}`);
           if (userResponse.ok) {
             const userData = await userResponse.json();
             userId = userData.id;
             console.log("✅ Found user ID:", userId);
           } else {
-            console.log("❌ Could not find user with email:", session.user.email);
+            console.log("❌ Could not find user for logged-in session");
           }
         } catch (userError) {
           console.log("⚠️  Error getting user ID:", userError);
@@ -163,26 +163,17 @@ const CheckoutPage = () => {
         userId: userId // Add user ID for notifications
       };
 
-      console.log("📋 Order data being sent:", orderData);
-
       // Send order data to server for validation and processing
       const response = await apiClient.post("/api/orders", orderData);
 
-      console.log("📡 API Response received:");
-      console.log("  Status:", response.status);
-      console.log("  Status Text:", response.statusText);
-      console.log("  Response OK:", response.ok);
-      
       // Check if response is ok before parsing
       if (!response.ok) {
-        console.error("❌ Response not OK:", response.status, response.statusText);
+        console.error("❌ Response not OK:", response.status);
         const errorText = await response.text();
-        console.error("Error response body:", errorText);
         
         // Try to parse as JSON to get detailed error info
         try {
           const errorData = JSON.parse(errorText);
-          console.error("Parsed error data:", errorData);
           
           // Handle different error types
           if (response.status === 409) {
@@ -210,14 +201,12 @@ const CheckoutPage = () => {
       }
 
       const data = await response.json();
-      console.log("✅ Parsed response data:", data);
       
       const orderId: string = data.id;
       console.log("🆔 Extracted order ID:", orderId);
 
       if (!orderId) {
         console.error("❌ Order ID is missing or falsy!");
-        console.error("Full response data:", JSON.stringify(data, null, 2));
         throw new Error("Order ID not received from server");
       }
 
@@ -273,7 +262,6 @@ const CheckoutPage = () => {
         console.log(" Handling 400 error...");
         try {
           const errorData = await error.response.json();
-          console.log("Error data:", errorData);
           if (errorData.details && Array.isArray(errorData.details)) {
             // Show specific validation errors
             errorData.details.forEach((detail: any) => {
@@ -315,16 +303,13 @@ const CheckoutPage = () => {
         quantity: productQuantity,
       });
 
-      console.log("📡 Product order response:", response);
-      
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Product order failed:", response.status, errorText);
+        console.error("❌ Product order failed:", response.status);
         throw new Error(`Product order failed: ${response.status}`);
       }
 
-      const data = await response.json();
-      console.log("✅ Product order successful:", data);
+      await response.json();
+      console.log("✅ Product order successful");
       
     } catch (error) {
       console.error("💥 Error creating product order:", error);
